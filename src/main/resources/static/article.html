@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今日头条</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --paper-bg: #fdfbf7;
+            --ink-color: #2c2c2c;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: #f3f4f6;
+            /* 极简纹理背景 */
+            background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fill-opacity='0.05' fill-rule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H5z'/%3E%3C/g%3E%3C/svg%3E");
+            color: var(--ink-color);
+        }
+
+        h1, h2, h3, .serif { font-family: 'Merriweather', serif; }
+
+        /* ================= 卡片样式 ================= */
+        .editorial-card {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .editorial-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+            border-color: rgba(0,0,0,0.1);
+        }
+
+        /* 底部大按钮样式 */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: #f3f4f6; /* 用于分割线的颜色 */
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .big-action-btn {
+            background: white;
+            border: none;
+            padding: 16px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #64748b;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .big-action-btn:hover {
+            background-color: #f8fafc;
+            color: #334155;
+        }
+
+        .big-action-btn i, .big-action-btn svg {
+            font-size: 1.4rem;
+            height: 1.4rem; /* 确保SVG高度一致 */
+            margin-bottom: 6px;
+            transition: transform 0.2s;
+            fill: currentColor; /* SVG颜色跟随文字颜色 */
+        }
+
+        /* ================= 动画特效 ================= */
+
+        /* 感兴趣：砰砰心跳 */
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.3); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.3); }
+            60% { transform: scale(1); }
+        }
+        .anim-interested { color: #ef4444 !important; }
+        .anim-interested i { animation: heartbeat 0.8s ease-in-out; }
+
+        /* 不感兴趣：心碎震动 */
+        @keyframes shake-break {
+            0% { transform: translateX(0) rotate(0); }
+            25% { transform: translateX(-3px) rotate(-5deg); }
+            50% { transform: translateX(3px) rotate(5deg); }
+            75% { transform: translateX(-3px) rotate(-5deg); }
+            100% { transform: translateX(0) rotate(0); }
+        }
+        .anim-uninterested { color: #94a3b8 !important; /* 灰色 */ }
+        .anim-uninterested svg { animation: shake-break 0.4s ease-in-out; }
+
+        /* 点赞激活 */
+        .anim-like { color: #ef4444 !important; }
+        .anim-like i { transform: scale(1.2) rotate(-15deg); }
+
+        /* 转发激活 */
+        .anim-share { color: #3b82f6 !important; }
+        .anim-share i { transform: scale(1.2) translateX(2px); }
+
+
+        /* ================= 悬浮控制台 (精确交互版) ================= */
+        .command-node-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 50;
+            /* 使用 column-reverse 让 HTML 中靠后的元素显示在上方 */
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: flex-end;
+            /* 关键：容器本身不响应鼠标，避免空白区域触发 */
+            pointer-events: none;
+        }
+
+        /* 子元素需要恢复鼠标响应 */
+        .fab-wrapper, .node-panel {
+            pointer-events: auto;
+        }
+
+        .node-panel {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 1.25rem;
+            border-radius: 1rem;
+            width: 260px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            margin-bottom: 1rem; /* 与按钮的间距 */
+
+            /* 默认隐藏状态 */
+            opacity: 0;
+            transform: translateY(10px) scale(0.95);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: bottom right;
+            /* 隐藏时不可点击，防止遮挡 */
+            pointer-events: none;
+        }
+
+        /* 关键交互逻辑：
+           1. 当鼠标悬停在按钮包装器 (.fab-wrapper) 上时，显示它紧邻的兄弟元素 (.node-panel)
+           2. 或者当鼠标悬停在面板本身时，也保持显示
+        */
+        .fab-wrapper:hover + .node-panel,
+        .node-panel:hover {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto; /* 显示时恢复点击 */
+        }
+
+        .main-fab {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #0f172a;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .fab-wrapper:hover .main-fab {
+            background: #2563eb;
+            transform: rotate(90deg);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
+        }
+
+        .badge-count {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #ef4444;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+            height: 22px;
+            min-width: 22px;
+            padding: 0 6px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #f3f4f6;
+            transition: transform 0.2s;
+        }
+    </style>
+</head>
+<body class="antialiased pb-20">
+
+<header class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm/50">
+    <div class="container mx-auto px-6 h-16 flex items-center justify-between max-w-5xl">
+        <div class="flex items-center gap-4">
+            <div class="serif font-black text-2xl tracking-tight text-gray-900">TOUTIAO</div>
+            <div class="hidden md:flex text-xs font-bold text-gray-400 tracking-widest uppercase border-l pl-4 border-gray-300">
+                Behavior Analytics
+            </div>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+            <span class="text-gray-400 text-xs uppercase">User ID:</span>
+            <span class="font-mono font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded" id="userId">LOADING</span>
+        </div>
+    </div>
+</header>
+
+<main class="container mx-auto px-6 py-10 max-w-5xl space-y-12">
+    <section class="border-b-2 border-black pb-8 text-center">
+        <h1 class="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4 serif">
+            深度洞察 · 价值阅读
+        </h1>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div class="lg:col-span-8 space-y-12">
+            <section>
+                <h2 class="text-2xl font-bold border-b border-gray-200 pb-3 mb-6 flex items-center gap-2">
+                    <span class="w-2 h-6 bg-red-600 rounded-sm"></span> 要闻推荐
+                </h2>
+                <div id="mainNewsSection" class="grid grid-cols-1 gap-8"></div>
+            </section>
+            <section>
+                <h2 class="text-2xl font-bold border-b border-gray-200 pb-3 mb-6 flex items-center gap-2">
+                    <span class="w-2 h-6 bg-blue-600 rounded-sm"></span> 科技前沿
+                </h2>
+                <div id="techNewsSection" class="grid grid-cols-1 gap-8"></div>
+            </section>
+        </div>
+        <div class="lg:col-span-4 space-y-10 lg:border-l lg:border-gray-200 lg:pl-10">
+            <section>
+                <h2 class="text-xl font-bold border-b border-gray-200 pb-3 mb-6 text-purple-900">娱乐热点</h2>
+                <div id="entertainmentNewsSection" class="space-y-8"></div>
+            </section>
+            <section>
+                <h2 class="text-xl font-bold border-b border-gray-200 pb-3 mb-6 text-green-900">体育赛事</h2>
+                <div id="sportsNewsSection" class="space-y-8"></div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<div class="command-node-container">
+
+    <div class="relative fab-wrapper z-20">
+        <button onclick="sendCachedBehaviors()" class="main-fab" title="Hover icon to expand">
+            <i class="fa fa-paper-plane"></i>
+        </button>
+        <div id="cacheCountBadge" class="badge-count hidden">0</div>
+    </div>
+
+    <div class="node-panel z-10">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+            <span class="text-xs font-bold text-blue-400 tracking-widest uppercase">System Ready</span>
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+        </div>
+        <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+                <span class="text-gray-400">Device</span>
+                <span class="text-white font-mono" id="device">...</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Logs Cached</span>
+                <span class="text-xl font-bold text-white font-mono" id="panelCacheCount">0</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Last Sync</span>
+                <span class="text-gray-300 font-mono text-xs" id="lastSendTime">Waiting...</span>
+            </div>
+            <div class="pt-2 mt-2 border-t border-gray-700">
+                <span id="sendStatus" class="block text-center text-xs font-bold text-blue-400">STANDBY</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ================= 配置与数据 =================
+    const config = {
+        sendInterval: 30000,
+        maxCacheSize: 10,
+        apiUrl: '/api/logs',
+        storageKey: 'userBehaviors'
+    };
+
+    // 定义破碎之心的 SVG Path (标准心形 + 白色裂痕)
+    const brokenHeartSvg = `
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="1.4em" height="1.4em">
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor"/>
+
+        <polyline points="12 5 11 9 13 11 11 14 12 19" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    `;
+
+
+    let userId = generateRandomId(8);
+    let device = generateRandomDevice();
+
+    const newsSections = [
+        { id: 'mainNewsSection', category: 'main', titles: ['国家发改委发布重要经济政策：未来五年规划深度解读', '全国两会即将召开：民生议题成为大众关注焦点', '国际气候峰会达成历史性协议：碳中和目标加速推进', '重大科技项目取得突破：量子芯片研发获关键进展'] },
+        { id: 'techNewsSection', category: 'tech', titles: ['生成式AI技术重塑内容产业：机遇与版权争议并存', '6G通信标准研讨会召开：超高速网络不再遥远', '全球半导体供应链重组：本土企业面临的挑战', '新能源电池技术革新：续航里程突破1000公里'] }
+    ];
+
+    const sidebarSections = [
+        { id: 'entertainmentNewsSection', category: 'entertainment', titles: ['暑期档票房再创新高：现实题材电影备受青睐', '知名歌手巡回演唱会启动：门票秒罄引发热议', '流媒体巨头发布财报：原创剧集订阅用户大增'] },
+        { id: 'sportsNewsSection', category: 'sports', titles: ['欧冠决赛名单出炉：传统豪门与黑马的对决', 'NBA季后赛战况激烈：老将绝杀引爆全场', '网球大满贯新星崛起：00后选手创造历史'] }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('userId').textContent = userId;
+        document.getElementById('device').textContent = device;
+        generateNewsContent();
+        initCache();
+        setInterval(sendCachedBehaviors, config.sendInterval);
+        // 确保在页面关闭前发送缓存数据
+        window.addEventListener('beforeunload', function(e) {
+            if (getCache().length > 0) sendCachedBehaviors();
+        });
+    });
+
+    function generateNewsContent() {
+        [...newsSections, ...sidebarSections].forEach(section => {
+            const sectionElement = document.getElementById(section.id);
+            const isSidebar = sidebarSections.some(s => s.id === section.id);
+
+            section.titles.forEach((title) => {
+                const articleId = section.category + '_' + generateRandomId(4);
+                sectionElement.appendChild(createNewsCard(articleId, title, section.category, isSidebar));
+            });
+        });
+    }
+
+    // ================= 卡片生成 (使用SVG图标) =================
+    function createNewsCard(articleId, title, category, isSidebar) {
+        const card = document.createElement('div');
+        card.className = 'editorial-card rounded-xl group';
+
+        const styleMap = {
+            'main': { badge: 'bg-red-100 text-red-800' },
+            'tech': { badge: 'bg-blue-100 text-blue-800' },
+            'entertainment': { badge: 'bg-purple-100 text-purple-800' },
+            'sports': { badge: 'bg-green-100 text-green-800' }
+        };
+        const style = styleMap[category];
+
+        card.innerHTML = `
+            <div class="p-6 pb-4">
+                <div class="flex items-center gap-2 mb-3 text-xs font-bold uppercase tracking-wider">
+                    <span class="px-2 py-0.5 rounded ${style.badge}">${category}</span>
+                    <span class="font-mono text-gray-400">#${articleId}</span>
+                </div>
+                <h3 class="${isSidebar ? 'text-lg' : 'text-2xl'} font-bold text-gray-900 leading-tight mb-3 group-hover:text-blue-800 transition-colors serif">${title}</h3>
+                <p class="text-gray-500 ${isSidebar ? 'text-sm line-clamp-2' : 'text-base line-clamp-3'} font-light">凭借独特的视角和深入的分析，这篇报道揭示了事件背后的复杂逻辑。随着事态的发展，更多细节逐渐浮出水面，引发了社会各界的广泛关注与讨论。</p>
+            </div>
+
+            <div class="action-grid">
+                <button onclick="triggerAction(this, 'like', '${articleId}')" class="big-action-btn hover:text-red-500">
+                    <i class="fa fa-thumbs-o-up"></i><span>点赞</span>
+                </button>
+                <button onclick="triggerAction(this, 'share', '${articleId}')" class="big-action-btn hover:text-blue-500">
+                    <i class="fa fa-share-square-o"></i><span>转发</span>
+                </button>
+                <button onclick="triggerAction(this, 'interested', '${articleId}')" class="big-action-btn hover:text-red-500">
+                    <i class="fa fa-heart-o"></i><span>感兴趣</span>
+                </button>
+                <button onclick="triggerAction(this, 'uninterested', '${articleId}')" class="big-action-btn hover:text-gray-600 uninterested-btn">
+                    ${brokenHeartSvg}
+                    <span>不感兴趣</span>
+                </button>
+            </div>
+        `;
+        return card;
+    }
+
+    // ================= 交互动画逻辑 (适配SVG) =================
+    function triggerAction(btn, action, articleId) {
+        recordBehavior(action, articleId);
+
+        // 重置所有动画和颜色类
+        const actionGrid = btn.closest('.action-grid');
+        actionGrid.querySelectorAll('.big-action-btn').forEach(b => {
+            b.classList.remove('anim-like', 'anim-share', 'anim-interested', 'anim-uninterested');
+        });
+
+        // 必须触发 reflow/repaint 才能重启动画
+        void btn.offsetWidth;
+
+        // 处理 Icon (SVG 或 I 标签)
+        const icon = btn.querySelector('i, svg');
+
+        // 重置所有图标状态
+        const allIcons = btn.closest('.action-grid').querySelectorAll('i, svg');
+        allIcons.forEach(i => {
+            if (i.tagName === 'I') {
+                // 仅重置非心形图标到 outline 状态
+                if (i.className.includes('fa-thumbs-up')) i.className = 'fa fa-thumbs-o-up';
+                if (i.className.includes('fa-heart')) i.className = 'fa fa-heart-o';
+            }
+        });
+
+        // 确保“不感兴趣”的文字装饰被移除
+        const allSpans = btn.closest('.action-grid').querySelectorAll('span');
+        allSpans.forEach(s => s.style.textDecoration = 'none');
+
+
+        if (action === 'like') {
+            btn.classList.add('anim-like');
+            btn.querySelector('i').className = 'fa fa-thumbs-up';
+        }
+        else if (action === 'share') {
+            btn.classList.add('anim-share');
+        }
+        else if (action === 'interested') {
+            btn.classList.add('anim-interested');
+            btn.querySelector('i').className = 'fa fa-heart';
+        }
+        else if (action === 'uninterested') {
+            // 只添加变灰和震动动画类，SVG 图案保持不变
+            btn.classList.add('anim-uninterested');
+            btn.querySelector('span').style.textDecoration = 'line-through';
+        }
+    }
+
+    // ================= 数据核心逻辑 =================
+    function initCache() {
+        if (!localStorage.getItem(config.storageKey)) localStorage.setItem(config.storageKey, JSON.stringify([]));
+        updateCacheStatus();
+    }
+    function getCache() {
+        return JSON.parse(localStorage.getItem(config.storageKey) || '[]');
+    }
+    function saveCache(behaviors) {
+        localStorage.setItem(config.storageKey, JSON.stringify(behaviors));
+        updateCacheStatus();
+    }
+    function recordBehavior(action, articleId) {
+        const cache = getCache();
+        const behavior = {
+            userId: userId,
+            action: action,
+            articleId: articleId,
+            timestamp: new Date().toISOString(),
+            device: device
+        };
+        cache.push(behavior);
+        saveCache(cache);
+        if (cache.length >= config.maxCacheSize) {
+            sendCachedBehaviors();
+        }
+    }
+
+    // ================= 真实发送数据的核心逻辑 =================
+    function sendCachedBehaviors() {
+        const behaviorsToSend = getCache();
+        if (behaviorsToSend.length === 0) return;
+
+        updateSendStatus('UPLOADING', 'blue');
+        const fabIcon = document.querySelector('.main-fab i');
+        fabIcon.className = 'fa fa-circle-o-notch fa-spin'; // Loading spin
+
+        // 真实的fetch请求
+        fetch(config.apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(behaviorsToSend),
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络响应错误');
+                }
+                return response.text();
+            })
+            .then(data => {
+                console.log('发送成功，响应:', data);
+                // 请求成功，清空缓存
+                saveCache([]);
+                updateSendStatus('SYNCED', 'green');
+                updateLastSendTime();
+            })
+            .catch(error => {
+                console.error('发送失败:', error);
+                updateSendStatus('ERROR', 'red');
+            })
+            .finally(() => {
+                // 恢复图标
+                fabIcon.className = 'fa fa-paper-plane';
+            });
+    }
+
+    // ================= 状态更新 =================
+    function updateCacheStatus() {
+        const count = getCache().length;
+        document.getElementById('panelCacheCount').textContent = count;
+        const badge = document.getElementById('cacheCountBadge');
+        badge.textContent = count;
+        badge.classList.toggle('hidden', count === 0);
+        if (count > 0) {
+            badge.style.transform = 'scale(1.2)';
+            setTimeout(() => badge.style.transform = 'scale(1)', 200);
+        }
+    }
+
+    function updateSendStatus(status, colorType) {
+        const textEl = document.getElementById('sendStatus');
+        textEl.textContent = status;
+        const colors = { 'green': 'text-green-400', 'blue': 'text-blue-400', 'red': 'text-red-500' };
+        textEl.className = `block text-center text-xs font-bold ${colors[colorType] || 'text-gray-400'}`;
+    }
+
+    function updateLastSendTime() {
+        document.getElementById('lastSendTime').textContent = new Date().toLocaleTimeString();
+    }
+
+    function generateRandomId(len) {
+        let result = '';
+        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        for (let i = 0; i < len; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+        return result;
+    }
+    function generateRandomDevice() {
+        return ['iPhone 15', 'Pixel 8', 'MacBook Pro', 'Windows 11'][Math.floor(Math.random() * 4)];
+    }
+</script>
+</body>
+</html>

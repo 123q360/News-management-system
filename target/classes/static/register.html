@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - News</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 背景装饰 */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            top: -400px;
+            right: -400px;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+            border-radius: 50%;
+            bottom: -300px;
+            left: -300px;
+            animation: float 15s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(50px, 50px); }
+        }
+
+        .register-container {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 20px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.08),
+                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+            width: 100%;
+            max-width: 420px;
+            padding: 48px 40px;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .register-title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .register-subtitle {
+            text-align: center;
+            font-size: 15px;
+            color: #86868b;
+            margin-bottom: 40px;
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #1d1d1f;
+        }
+
+        .form-group input::placeholder {
+            color: #86868b;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #0071e3;
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: #86868b;
+            margin-top: 6px;
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 14px;
+            background: #0071e3;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 24px;
+        }
+
+        .btn-register:hover {
+            background: #0077ed;
+            box-shadow: 0 8px 20px rgba(0, 113, 227, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-register:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.2);
+        }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #86868b;
+        }
+
+        .form-footer a {
+            color: #0071e3;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .form-footer a:hover {
+            color: #0077ed;
+        }
+
+        .alert {
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: none;
+            font-size: 14px;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-error {
+            background: rgba(255, 59, 48, 0.1);
+            color: #ff3b30;
+            border: 1px solid rgba(255, 59, 48, 0.2);
+        }
+
+        .alert-success {
+            background: rgba(52, 199, 89, 0.1);
+            color: #34c759;
+            border: 1px solid rgba(52, 199, 89, 0.2);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .register-container {
+                padding: 40px 24px;
+            }
+
+            .register-title {
+                font-size: 28px;
+            }
+
+            .register-subtitle {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <h1 class="register-title">News</h1>
+        <p class="register-subtitle">创建您的账户</p>
+        
+        <div id="alert" class="alert"></div>
+
+        <form id="registerForm" autocomplete="off">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" placeholder="输入用户名" autocomplete="username" required>
+                <div class="form-hint">3-20个字符</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" placeholder="输入密码" autocomplete="new-password" required>
+                <div class="form-hint">至少6位字符</div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">确认密码</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="再次输入密码" autocomplete="new-password" required>
+            </div>
+
+            <button type="submit" class="btn-register">注册</button>
+        </form>
+
+        <div class="form-footer">
+            已有账号？ <a href="/login.html">立即登录</a>
+        </div>
+    </div>
+
+    <script>
+        const registerForm = document.getElementById('registerForm');
+        const alertBox = document.getElementById('alert');
+
+        // 显示提示信息
+        function showAlert(message, type) {
+            alertBox.textContent = message;
+            alertBox.className = 'alert alert-' + type;
+            alertBox.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    alertBox.style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        // 处理注册表单提交
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // 前端验证
+            if (!username || !password || !confirmPassword) {
+                showAlert('请填写完整信息', 'error');
+                return;
+            }
+
+            if (username.length < 3 || username.length > 20) {
+                showAlert('用户名长度必须在3-20个字符之间', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showAlert('密码长度不能少于6位', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showAlert('两次输入的密码不一致', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('注册成功！正在跳转到登录页...', 'success');
+                    
+                    // 跳转到登录页
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 1500);
+                } else {
+                    showAlert(result.message || '注册失败', 'error');
+                }
+            } catch (error) {
+                showAlert('网络错误，请稍后重试', 'error');
+                console.error('注册错误:', error);
+            }
+        });
+
+        // 检查是否已登录
+        async function checkLogin() {
+            try {
+                const response = await fetch('/api/auth/check');
+                const result = await response.json();
+                
+                if (result.loggedIn) {
+                    // 已登录，跳转到对应页面
+                    if (result.role === 'ADMIN') {
+                        window.location.href = '/admin.html';
+                    } else {
+                        window.location.href = '/news-list.html';
+                    }
+                }
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+            }
+        }
+
+        // 页面加载时检查登录状态
+        checkLogin();
+    </script>
+</body>
+</html>

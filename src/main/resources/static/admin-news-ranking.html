@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Ranking - Admin</title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #F5F5F7;
+            --card-bg: #FFFFFF;
+            --text-primary: #1D1D1F;
+            --text-secondary: #86868B;
+            --accent-color: #0071e3;
+            --border-radius: 20px;
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        /* === 头部 === */
+        .header {
+            max-width: 1200px;
+            margin: 0 auto 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        .back-btn {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity 0.2s;
+        }
+        .back-btn:hover { opacity: 0.7; }
+
+        /* === 指标切换器 (Segmented Control) === */
+        .metrics-selector {
+            background: #E8E8ED;
+            padding: 4px;
+            border-radius: 12px;
+            display: inline-flex;
+            margin-top: 20px;
+        }
+
+        .metric-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .metric-btn:hover { color: #000; }
+
+        .metric-btn.active {
+            background: #FFFFFF;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* === Bento Grid === */
+        .grid-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        /* 通用卡片 */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+        }
+
+        /* 第一排：图表区 */
+        .chart-card-lg { grid-column: span 2; height: 360px; }
+        .chart-card-sm { grid-column: span 1; height: 360px; }
+
+        .chart-wrapper {
+            flex-grow: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 第二排：排行榜列表 */
+        .ranking-card {
+            grid-column: span 3;
+            padding: 0; /* 列表贴边 */
+            overflow: hidden;
+        }
+
+        .ranking-header {
+            padding: 24px 24px 10px;
+            border-bottom: 1px solid #F5F5F7;
+        }
+
+        /* 列表项样式 */
+        .ranking-list { list-style: none; }
+
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid #F5F5F7;
+            transition: background 0.2s;
+        }
+        .ranking-item:last-child { border-bottom: none; }
+        .ranking-item:hover { background: #FAFAFA; }
+
+        /* 排名数字 */
+        .rank-num {
+            width: 32px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-right: 16px;
+        }
+        .rank-1 { color: #FFD700; font-size: 20px; } /* 金 */
+        .rank-2 { color: #C0C0C0; font-size: 20px; } /* 银 */
+        .rank-3 { color: #CD7F32; font-size: 20px; } /* 铜 */
+
+        /* 新闻信息 */
+        .news-info { flex: 1; min-width: 0; margin-right: 20px; }
+
+        .news-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .news-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .tag {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+        .tag-tech { background: #E3F2FD; color: #007AFF; }
+        .tag-sports { background: #FFEBEE; color: #FF2D55; }
+        .tag-game { background: #F3E5F5; color: #AF52DE; }
+        .tag-politics { background: #FFF3E0; color: #FF9500; }
+
+        /* 分数展示 */
+        .score-box {
+            text-align: right;
+            min-width: 100px;
+        }
+        .score-val {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-feature-settings: "tnum";
+        }
+        .score-lbl {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* 状态提示 */
+        .loading, .empty { text-align: center; padding: 60px; color: var(--text-secondary); }
+
+        @media (max-width: 900px) {
+            .grid-container { grid-template-columns: 1fr; }
+            .chart-card-lg, .chart-card-sm, .ranking-card { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>News Ranking</h1>
+        <p>Real-time content performance analytics.</p>
+
+        <!-- 指标切换 -->
+        <div class="metrics-selector">
+            <button class="metric-btn active" data-metric="view_count">Views</button>
+            <button class="metric-btn" data-metric="like_count">Likes</button>
+            <button class="metric-btn" data-metric="comment_count">Comments</button>
+            <button class="metric-btn" data-metric="share_count">Shares</button>
+            <button class="metric-btn" data-metric="hot_score">Hot Score</button>
+        </div>
+    </div>
+    <a href="admin.html" class="back-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Dashboard
+    </a>
+</div>
+
+<!-- Bento Grid -->
+<div class="grid-container">
+
+    <!-- 1. 柱状图 (Top 10) -->
+    <div class="card chart-card-lg">
+        <div class="card-title">Top 10 Performance</div>
+        <div class="chart-wrapper">
+            <canvas id="barChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 2. 环形图 (Category) -->
+    <div class="card chart-card-sm">
+        <div class="card-title">Category Distribution</div>
+        <div class="chart-wrapper">
+            <canvas id="pieChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 3. 排行榜列表 -->
+    <div class="card ranking-card">
+        <div class="ranking-header">
+            <div class="card-title" style="margin-bottom:0">Ranking Details</div>
+        </div>
+        <div id="rankingList">
+            <div class="loading">Loading data...</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // 配置
+    let currentMetric = 'view_count';
+    let barChartInst = null;
+    let pieChartInst = null;
+
+    // 颜色映射
+    const colors = {
+        blue: '#0071e3',
+        red: '#ff3b30',
+        purple: '#af52de',
+        green: '#34c759',
+        orange: '#ff9500'
+    };
+
+    const metricConfig = {
+        'view_count': { label: 'Views', color: colors.blue },
+        'like_count': { label: 'Likes', color: colors.red },
+        'comment_count': { label: 'Comments', color: colors.purple },
+        'share_count': { label: 'Shares', color: colors.green },
+        'hot_score': { label: 'Hot Score', color: colors.orange }
+    };
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        // Chart.js 全局极简配置
+        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, sans-serif';
+        Chart.defaults.color = '#86868B';
+        Chart.defaults.scale.grid.display = false;
+
+        loadRanking(currentMetric);
+
+        // 绑定点击事件
+        document.querySelectorAll('.metric-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentMetric = this.dataset.metric;
+                loadRanking(currentMetric);
+            });
+        });
+    });
+
+    // 加载数据
+    async function loadRanking(metric) {
+        const container = document.getElementById('rankingList');
+        // container.innerHTML = '<div class="loading">Updating...</div>'; // 可选：更新时不闪烁
+
+        try {
+            const response = await fetch(`/api/admin/news/ranking?metric=${metric}&limit=10`);
+            const result = await response.json();
+
+            if (result.success) {
+                renderCharts(result.data, metric);
+                renderList(result.data, metric);
+            } else {
+                container.innerHTML = `<div class="empty">${result.message}</div>`;
+            }
+        } catch (error) {
+            container.innerHTML = '<div class="empty">Connection error.</div>';
+        }
+    }
+
+    // 渲染列表
+    function renderList(data, metric) {
+        const container = document.getElementById('rankingList');
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="empty">No data available</div>';
+            return;
+        }
+
+        const conf = metricConfig[metric];
+        let html = '<ul class="ranking-list">';
+
+        data.forEach((item, index) => {
+            const rank = index + 1;
+            let rankClass = 'rank-num';
+            if (rank === 1) rankClass += ' rank-1';
+            else if (rank === 2) rankClass += ' rank-2';
+            else if (rank === 3) rankClass += ' rank-3';
+
+            const catKey = item.category || 'tech';
+            const catName = catKey.charAt(0).toUpperCase() + catKey.slice(1);
+
+            // 数值取整
+            let val = item[metric];
+            if (metric === 'hot_score') val = Math.round(item.hot_score);
+
+            html += `
+                    <li class="ranking-item">
+                        <div class="${rankClass}">${rank}</div>
+                        <div class="news-info">
+                            <div class="news-title">${item.title}</div>
+                            <div class="news-meta">
+                                <span class="tag tag-${catKey}">${catName}</span>
+                                <span>• ${item.author || 'Unknown'}</span>
+                            </div>
+                        </div>
+                        <div class="score-box">
+                            <div class="score-val" style="color:${conf.color}">${val.toLocaleString()}</div>
+                            <div class="score-lbl">${conf.label}</div>
+                        </div>
+                    </li>
+                `;
+        });
+        html += '</ul>';
+        container.innerHTML = html;
+    }
+
+    // 渲染图表
+    function renderCharts(data, metric) {
+        const conf = metricConfig[metric];
+        const top10 = data.slice(0, 10);
+
+        // --- 1. Bar Chart (Top 10) ---
+        const ctxBar = document.getElementById('barChart').getContext('2d');
+        if (barChartInst) barChartInst.destroy();
+
+        // 创建渐变色
+        const gradient = ctxBar.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, conf.color);
+        gradient.addColorStop(1, '#ffffff'); // 渐变到底部白色
+
+        barChartInst = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: top10.map(d => d.title.substring(0, 15) + '...'),
+                datasets: [{
+                    label: conf.label,
+                    data: top10.map(d => metric === 'hot_score' ? Math.round(d.hot_score) : d[metric]),
+                    backgroundColor: conf.color,
+                    borderRadius: 6,
+                    barThickness: 30
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { display: true, color: '#f5f5f7' },
+                        border: { display: false }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // --- 2. Doughnut Chart (Category) ---
+        const ctxPie = document.getElementById('pieChart').getContext('2d');
+        if (pieChartInst) pieChartInst.destroy();
+
+        // 数据聚合
+        const catMap = {};
+        top10.forEach(d => {
+            const c = d.category || 'other';
+            catMap[c] = (catMap[c] || 0) + 1;
+        });
+
+        pieChartInst = new Chart(ctxPie, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(catMap),
+                datasets: [{
+                    data: Object.values(catMap),
+                    backgroundColor: ['#0071e3', '#34c759', '#af52de', '#ff9500', '#ff3b30'],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>

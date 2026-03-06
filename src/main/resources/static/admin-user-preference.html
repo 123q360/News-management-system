@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preference Analytics - Admin</title>
+    <!-- 引入 Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #F5F5F7;
+            --card-bg: #FFFFFF;
+            --text-primary: #1D1D1F;
+            --text-secondary: #86868B;
+            --accent-blue: #007AFF;
+            --border-radius: 20px;
+            --shadow: 0 4px 20px rgba(0,0,0,0.04);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            padding: 40px;
+            min-height: 100vh;
+        }
+
+        /* === 头部 === */
+        .header {
+            max-width: 1200px;
+            margin: 0 auto 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .back-link {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+        .back-link:hover { opacity: 0.7; }
+
+        /* === Bento Grid 布局 === */
+        .grid-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4列布局 */
+            grid-template-rows: auto auto auto;
+            gap: 24px;
+        }
+
+        /* 通用卡片样式 */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+        .card:hover { transform: translateY(-2px); }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }
+
+        /* === 第一排：核心指标 (Key Metrics) === */
+        .stat-card {
+            grid-column: span 1; /* 占1列 */
+            justify-content: space-between;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            color: var(--text-primary);
+        }
+
+        .stat-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* === 第二排：图表区 === */
+        .chart-card-lg {
+            grid-column: span 2; /* 占2列 */
+            height: 320px;
+        }
+
+        .chart-card-sm {
+            grid-column: span 1; /* 占1列 */
+            height: 320px;
+        }
+
+        .chart-container {
+            flex-grow: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* === 第三排：表格 (Top Users) === */
+        .table-card {
+            grid-column: span 4; /* 占满整行 */
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            text-align: left;
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        td {
+            padding: 16px 0;
+            border-bottom: 1px solid #f5f5f7;
+            color: var(--text-primary);
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        /* 排名徽章 */
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: #F0F0F2;
+            border-radius: 50%;
+            font-weight: 600;
+            font-size: 11px;
+        }
+        .rank-1 { background: #FFD700; color: #FFF; }
+        .rank-2 { background: #C0C0C0; color: #FFF; }
+        .rank-3 { background: #CD7F32; color: #FFF; }
+
+        /* 偏好标签 */
+        .tag {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .tag-tech { background: #E3F2FD; color: #007AFF; }
+        .tag-sports { background: #FFEBEE; color: #FF2D55; }
+        .tag-game { background: #F3E5F5; color: #AF52DE; }
+        .tag-politics { background: #FFF3E0; color: #FF9500; }
+        .tag-none { background: #F5F5F7; color: #86868B; }
+
+        /* Loading */
+        .loading { text-align: center; padding: 40px; color: var(--text-secondary); }
+
+        /* Toast 悬浮气泡 */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        .toast {
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+            color: white;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(-10px);
+            animation: toastIn 0.3s ease forwards;
+        }
+
+        .toast.success { background: rgba(52, 199, 89, 0.9); }
+        .toast.error { background: rgba(255, 59, 48, 0.9); }
+
+        @keyframes toastIn { to { opacity: 1; transform: translateY(0); } }
+        @keyframes toastOut { to { opacity: 0; transform: translateY(-10px); } }
+
+        /* 响应式 */
+        @media (max-width: 1024px) {
+            .grid-container { grid-template-columns: repeat(2, 1fr); }
+            .stat-card { grid-column: span 1; }
+            .chart-card-lg { grid-column: span 2; }
+            .chart-card-sm { grid-column: span 1; }
+            .table-card { grid-column: span 2; }
+        }
+        @media (max-width: 768px) {
+            .grid-container { display: flex; flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- 1. Header -->
+<header class="header">
+    <div>
+        <h1>User Preferences</h1>
+        <p>Real-time analysis based on Hadoop & MapReduce</p>
+    </div>
+    <a href="/admin.html" class="back-link">Back to Dashboard</a>
+</header>
+
+<!-- 2. Grid Layout -->
+<div class="grid-container" id="mainContainer">
+
+    <!-- Row 1: Key Metrics (4个小卡片) -->
+    <!-- JS 动态填充 id="statsCards" -->
+    <!-- 预留位置，避免 JS 加载前塌陷 -->
+    <div class="stat-card"><div class="loading">Loading...</div></div>
+    <div class="stat-card"><div class="loading">Loading...</div></div>
+    <div class="stat-card"><div class="loading">Loading...</div></div>
+    <div class="stat-card"><div class="loading">Loading...</div></div>
+
+    <!-- Row 2: Charts -->
+    <!-- 2.1 偏好分布 (Pie Chart) -->
+    <div class="card chart-card-sm">
+        <div class="chart-title">Preference Distribution</div>
+        <div class="chart-container">
+            <canvas id="distributionChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 2.2 类别权值对比 (Bar Chart) -->
+    <div class="card chart-card-lg">
+        <div class="chart-title">Total Weight by Category</div>
+        <div class="chart-container">
+            <canvas id="comparisonChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 2.3 偏好强度雷达 (Radar) -->
+    <div class="card chart-card-sm">
+        <div class="chart-title">Avg Intensity</div>
+        <div class="chart-container">
+            <canvas id="radarChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Row 3: Table -->
+    <div class="card table-card">
+        <div class="chart-title">Top 10 Active Users</div>
+        <table>
+            <thead>
+            <tr>
+                <th style="width: 50px;">Rank</th>
+                <th>User</th>
+                <th>Main Interest</th>
+                <th style="text-align: right;">Tech</th>
+                <th style="text-align: right;">Sports</th>
+                <th style="text-align: right;">Game</th>
+                <th style="text-align: right;">Politics</th>
+                <th style="text-align: right;">Total Score</th>
+            </tr>
+            </thead>
+            <tbody id="topUsersBody">
+            <tr><td colspan="8" class="loading">Loading data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    // Toast 提示函数
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.animation = 'toastOut 0.3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 1000);
+    }
+
+    // 全局图表实例
+    let charts = {};
+
+    // 页面加载
+    document.addEventListener('DOMContentLoaded', loadPreferenceAnalysis);
+
+    async function loadPreferenceAnalysis() {
+        try {
+            // 你的原始接口
+            const response = await fetch('/api/admin/user-preference-analysis');
+            const result = await response.json();
+
+            if (result.success) {
+                // 1. 渲染顶部4个卡片 (科技/体育/游戏/政治人数)
+                renderStatCards(result.data.categoryStats);
+                // 2. 渲染图表
+                renderCharts(result.data);
+                // 3. 渲染表格
+                renderTable(result.data.topUsers);
+            } else {
+                showToast('Data load failed: ' + result.message, 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Connection error', 'error');
+        }
+    }
+
+    // 1. 渲染顶部统计卡片 (重写逻辑，插入到 Grid 前4个位置)
+    function renderStatCards(stats) {
+        // 获取容器的前4个元素 (占位符)
+        const container = document.getElementById('mainContainer');
+        // 清除前4个占位 Loading
+        // 这里为了简单，我们用 JS 替换那4个 div 的内容，或者重新生成
+
+        // 重新定义数据结构
+        const categories = [
+            { key: 'tech', label: 'Technology', color: '#007AFF' },
+            { key: 'sports', label: 'Sports', color: '#FF2D55' },
+            { key: 'game', label: 'Gaming', color: '#AF52DE' },
+            { key: 'politics', label: 'Politics', color: '#FF9500' }
+        ];
+
+        // 找到现有的4个 stat-card (它们是 grid 的前4个子元素)
+        const cards = document.querySelectorAll('.stat-card');
+
+        categories.forEach((cat, index) => {
+            if (cards[index]) {
+                const count = stats[cat.key + '_users'] || 0;
+                const avg = parseFloat(stats['avg_' + cat.key] || 0).toFixed(1);
+
+                cards[index].innerHTML = `
+                        <div class="chart-title" style="color: ${cat.color}">${cat.label} Users</div>
+                        <div class="stat-value">${count}</div>
+                        <div class="stat-meta">Avg Score: ${avg}</div>
+                    `;
+            }
+        });
+    }
+
+    // 2. 渲染所有图表 (统一样式配置)
+    function renderCharts(data) {
+        // 通用配置：去掉杂乱的网格线，让图表更干净
+        Chart.defaults.scale.grid.display = false;
+        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, sans-serif';
+        Chart.defaults.color = '#86868B';
+
+        // --- A. 环形图 (Distribution) ---
+        const ctxDist = document.getElementById('distributionChart');
+        const distData = data.distribution;
+        // 简单的颜色映射
+        const colors = ['#007AFF', '#FF2D55', '#AF52DE', '#FF9500', '#E5E5EA'];
+
+        new Chart(ctxDist, {
+            type: 'doughnut',
+            data: {
+                labels: distData.map(d => d.preference_category),
+                datasets: [{
+                    data: distData.map(d => d.count),
+                    backgroundColor: colors,
+                    borderWidth: 0, // 去掉边框更现代
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                cutout: '70%', // 甜甜圈更细
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } }
+            }
+        });
+
+        // --- B. 柱状图 (Comparison) ---
+        const ctxComp = document.getElementById('comparisonChart');
+        const scores = data.totalScores;
+
+        new Chart(ctxComp, {
+            type: 'bar',
+            data: {
+                labels: ['Tech', 'Sports', 'Game', 'Politics'],
+                datasets: [{
+                    label: 'Total Weight',
+                    data: [scores.tech_total, scores.sports_total, scores.game_total, scores.politics_total],
+                    backgroundColor: ['#007AFF', '#FF2D55', '#AF52DE', '#FF9500'],
+                    borderRadius: 6, // 圆角柱子
+                    barThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { display: true, color: '#f0f0f0' }, border: { display: false } }, // 仅保留横向网格
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // --- C. 雷达图 (Radar) ---
+        const ctxRadar = document.getElementById('radarChart');
+        const stats = data.categoryStats;
+
+        new Chart(ctxRadar, {
+            type: 'radar',
+            data: {
+                labels: ['Tech', 'Sports', 'Game', 'Politics'],
+                datasets: [{
+                    label: 'Avg Intensity',
+                    data: [stats.avg_tech, stats.avg_sports, stats.avg_game, stats.avg_politics],
+                    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+                    borderColor: '#007AFF',
+                    pointBackgroundColor: '#007AFF',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        ticks: { display: false }, // 不显示刻度数字
+                        grid: { color: '#f0f0f0' }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 3. 渲染表格
+    function renderTable(users) {
+        const tbody = document.getElementById('topUsersBody');
+        if (!users || users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No data available</td></tr>';
+            return;
+        }
+
+        let html = '';
+        users.forEach((u, i) => {
+            const rank = i + 1;
+            // 排名徽章逻辑
+            let rankHtml = `<span class="rank-badge rank-${rank}">${rank}</span>`;
+            if (rank > 3) rankHtml = `<span class="rank-badge" style="background:transparent; color:#86868B;">${rank}</span>`;
+
+            // 类别标签逻辑
+            const catKey = u.preference_category || 'none';
+            const tagClass = 'tag-' + catKey;
+            const tagName = catKey.charAt(0).toUpperCase() + catKey.slice(1); // 首字母大写
+
+            html += `
+                    <tr>
+                        <td>${rankHtml}</td>
+                        <td style="font-weight: 600;">${u.username}</td>
+                        <td><span class="tag ${tagClass}">${tagName}</span></td>
+                        <td style="text-align: right; color: #86868B;">${u.tech?.toFixed(1) || 0}</td>
+                        <td style="text-align: right; color: #86868B;">${u.sports?.toFixed(1) || 0}</td>
+                        <td style="text-align: right; color: #86868B;">${u.game?.toFixed(1) || 0}</td>
+                        <td style="text-align: right; color: #86868B;">${u.politics?.toFixed(1) || 0}</td>
+                        <td style="text-align: right; font-weight: 700;">${u.total?.toFixed(1) || 0}</td>
+                    </tr>
+                `;
+        });
+        tbody.innerHTML = html;
+    }
+</script>
+</body>
+</html>

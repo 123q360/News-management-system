@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - News</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            background: #F5F5F7;
+            color: #1d1d1f;
+        }
+
+        /* 顶部导航栏 (Apple 风格) */
+        .navbar {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            height: 54px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .navbar-container {
+            max-width: 1024px;
+            width: 100%;
+            padding: 0 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1d1d1f;
+            letter-spacing: -0.3px;
+        }
+
+        .btn-back {
+            padding: 6px 16px;
+            background: #0071e3;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-back:hover {
+            background: #0077ed;
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 22px;
+        }
+
+        /* 标签页 (Apple 风格) */
+        .tabs {
+            background: white;
+            border-radius: 18px 18px 0 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            display: flex;
+            overflow: hidden;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 18px;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+            color: #86868b;
+        }
+
+        .tab:hover {
+            background: rgba(0,0,0,0.02);
+        }
+
+        .tab.active {
+            color: #0071e3;
+            border-bottom-color: #0071e3;
+            background: white;
+        }
+
+        /* 内容区域 */
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 0 0 18px 18px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            min-height: 500px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #1d1d1f;
+            font-size: 13px;
+        }
+
+        .form-group input {
+            width: 100%;
+            max-width: 400px;
+            padding: 14px 16px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.8);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #0071e3;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #0071e3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0077ed;
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #ff3b30;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff2d21;
+            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* 浏览历史样式 */
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .filters select,
+        .filters input {
+            padding: 10px 14px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .filters select:focus,
+        .filters input:focus {
+            outline: none;
+            border-color: #0071e3;
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+        }
+
+        .history-list {
+            margin-top: 20px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: 14px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .history-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-color: rgba(0, 113, 227, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .history-title:hover {
+            color: #0071e3;
+        }
+
+        .history-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: #86868b;
+        }
+
+        .category-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            background: rgba(0, 113, 227, 0.1);
+            color: #0071e3;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .category-tag.sports {
+            background: rgba(255, 45, 85, 0.1);
+            color: #FF2D55;
+        }
+
+        .category-tag.game {
+            background: rgba(88, 86, 214, 0.1);
+            color: #5856D6;
+        }
+
+        .category-tag.politics {
+            background: rgba(255, 149, 0, 0.1);
+            color: #FF9500;
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-delete {
+            padding: 7px 14px;
+            background: rgba(255, 59, 48, 0.1);
+            color: #ff3b30;
+            border: 1px solid rgba(255, 59, 48, 0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-delete:hover {
+            background: #ff3b30;
+            color: white;
+            border-color: #ff3b30;
+            transform: translateY(-1px);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .pagination button {
+            padding: 8px 16px;
+            border: 1px solid rgba(0,0,0,0.1);
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #0071e3;
+            color: white;
+            border-color: #0071e3;
+            transform: translateY(-1px);
+        }
+
+        .pagination button:disabled {
+            cursor: not-allowed;
+            opacity: 0.3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #86868b;
+        }
+
+        /* Toast 悬浮气泡 */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        .toast {
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: white;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(-10px);
+            animation: toastIn 0.3s ease forwards;
+        }
+
+        .toast.success { background: rgba(52, 199, 89, 0.9); }
+        .toast.error { background: rgba(255, 59, 48, 0.9); }
+        .toast.warning { background: rgba(255, 149, 0, 0.9); }
+
+        @keyframes toastIn { to { opacity: 1; transform: translateY(0); } }
+        @keyframes toastOut { to { opacity: 0; transform: translateY(-10px); } }
+    </style>
+</head>
+<body>
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 顶部导航栏 -->
+    <div class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">Settings</div>
+            <a href="/news-list.html" class="btn-back">← 返回首页</a>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 标签页 -->
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('profile')">
+                个人信息
+            </div>
+            <div class="tab" onclick="showTab('history')">
+                浏览历史
+            </div>
+        </div>
+
+        <!-- 内容区域 -->
+        <div class="content">
+            <!-- 个人信息标签 -->
+            <div class="tab-content active" id="profile">
+                <h3 style="margin-bottom: 30px;">修改用户名</h3>
+                <div class="form-group">
+                    <label>当前用户名</label>
+                    <input type="text" id="currentUsername" disabled>
+                </div>
+                <div class="form-group">
+                    <label>新用户名</label>
+                    <input type="text" id="newUsername" placeholder="请输入新用户名">
+                </div>
+                <button class="btn btn-primary" onclick="updateUsername()">保存用户名</button>
+
+                <hr style="margin: 50px 0; border: none; border-top: 1px solid #eee;">
+
+                <h3 style="margin-bottom: 30px;">修改密码</h3>
+                <div class="form-group">
+                    <label>旧密码</label>
+                    <input type="password" id="oldPassword" placeholder="请输入旧密码" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" id="newPassword" placeholder="请输入新密码" autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <input type="password" id="confirmPassword" placeholder="请再次输入新密码" autocomplete="new-password">
+                </div>
+                <button class="btn btn-primary" onclick="updatePassword()">修改密码</button>
+            </div>
+
+            <!-- 浏览历史标签 -->
+            <div class="tab-content" id="history">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>我的浏览历史 <span id="totalCount" style="color: #999; font-size: 14px;"></span></h3>
+                    <button class="btn btn-danger" onclick="clearAllHistory()">清空所有历史</button>
+                </div>
+
+                <!-- 筛选条件 -->
+                <div class="filters">
+                    <select id="categoryFilter">
+                        <option value="">全部分类</option>
+                        <option value="tech">科技</option>
+                        <option value="sports">运动</option>
+                        <option value="game">游戏</option>
+                        <option value="politics">政治</option>
+                    </select>
+
+                    <input type="date" id="dateFilter">
+
+                    <button class="btn btn-primary" onclick="loadHistory()">筛选</button>
+                    <button class="btn" style="background: #f0f0f0;" onclick="resetFilters()">重置</button>
+                </div>
+
+                <!-- 历史记录列表 -->
+                <div class="history-list" id="historyList">
+                    <div class="loading">加载中...</div>
+                </div>
+
+                <!-- 分页 -->
+                <div class="pagination" id="pagination" style="display: none;">
+                    <button onclick="loadHistory(currentPage - 1)" id="prevBtn">上一页</button>
+                    <span id="pageInfo" style="padding: 8px 16px;"></span>
+                    <button onclick="loadHistory(currentPage + 1)" id="nextBtn">下一页</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toast 提示函数
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'toastOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 1000);
+        }
+
+        let currentUser = null;
+        let currentPage = 1;
+        const pageSize = 20;
+
+        // 页面加载
+        window.onload = async function() {
+            await checkLoginAndLoadUser();
+            loadHistory(1);
+        };
+
+        // 检查登录状态
+        async function checkLoginAndLoadUser() {
+            try {
+                const response = await fetch('/api/auth/current');
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentUser = result.data;
+                    document.getElementById('currentUsername').value = currentUser.username;
+                } else {
+                    showToast('请先登录', 'warning');
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        // 切换标签页
+        function showTab(tabName) {
+            // 隐藏所有标签内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 移除所有标签激活状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的标签
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+
+            // 如果切换到浏览历史，加载数据
+            if (tabName === 'history') {
+                loadHistory(1);
+            }
+        }
+
+        // 修改用户名
+        async function updateUsername() {
+            const newUsername = document.getElementById('newUsername').value.trim();
+            
+            if (!newUsername) {
+                showToast('请输入新用户名', 'warning');
+                return;
+            }
+
+            if (newUsername === currentUser.username) {
+                showToast('新用户名与当前用户名相同', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/user/username', {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ username: newUsername })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showToast('用户名修改成功', 'success');
+                    currentUser.username = newUsername;
+                    document.getElementById('currentUsername').value = newUsername;
+                    document.getElementById('newUsername').value = '';
+                } else {
+                    showToast(result.message || '修改失败', 'error');
+                }
+            } catch (error) {
+                console.error('修改用户名失败:', error);
+                showToast('网络错误，请稍后重试', 'error');
+            }
+        }
+
+        // 修改密码
+        async function updatePassword() {
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                showToast('请填写所有密码字段', 'warning');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showToast('两次输入的新密码不一致', 'warning');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showToast('新密码长度不能少于6位', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/user/password', {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        oldPassword: oldPassword,
+                        newPassword: newPassword 
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showToast('密码修改成功，请重新登录', 'success');
+                    // 清空密码框
+                    document.getElementById('oldPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                    // 跳转到登录页
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 1000);
+                } else {
+                    showToast(result.message || '修改失败', 'error');
+                }
+            } catch (error) {
+                console.error('修改密码失败:', error);
+                showToast('网络错误，请稍后重试', 'error');
+            }
+        }
+
+        // 加载浏览历史
+        async function loadHistory(page = 1) {
+            currentPage = page;
+            const category = document.getElementById('categoryFilter').value;
+            const date = document.getElementById('dateFilter').value;
+
+            try {
+                let url = `/api/user/history?page=${page}&size=${pageSize}`;
+                if (category) url += `&category=${category}`;
+                if (date) url += `&date=${date}`;
+
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.success) {
+                    renderHistory(result.data);
+                } else {
+                    showToast(result.message || '加载失败', 'error');
+                }
+            } catch (error) {
+                console.error('加载浏览历史失败:', error);
+                document.getElementById('historyList').innerHTML = 
+                    '<div class="empty-state">加载失败，请刷新重试</div>';
+            }
+        }
+
+        // 渲染浏览历史
+        function renderHistory(data) {
+            const { list, total, page, totalPages } = data;
+            const container = document.getElementById('historyList');
+            
+            // 更新总数
+            document.getElementById('totalCount').textContent = `(共${total}条)`;
+
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div>暂无浏览历史</div>
+                    </div>
+                `;
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+
+            const categoryMap = {
+                'tech': '科技',
+                'sports': '运动',
+                'game': '游戏',
+                'politics': '政治'
+            };
+
+            container.innerHTML = list.map(item => `
+                <div class="history-item">
+                    <div class="history-info">
+                        <div class="history-title" onclick="viewNews(${item.newsId})">
+                            ${item.newsTitle}
+                        </div>
+                        <div class="history-meta">
+                            <span class="category-tag ${item.newsCategory}">
+                                ${categoryMap[item.newsCategory] || item.newsCategory}
+                            </span>
+                            <span>📱 ${item.device}</span>
+                            <span>🕐 ${formatTime(item.browseTime)}</span>
+                        </div>
+                    </div>
+                    <div class="history-actions">
+                        <button class="btn-delete" onclick="deleteHistory(${item.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // 更新分页
+            if (totalPages > 1) {
+                document.getElementById('pagination').style.display = 'flex';
+                document.getElementById('pageInfo').textContent = `${page} / ${totalPages}`;
+                document.getElementById('prevBtn').disabled = page <= 1;
+                document.getElementById('nextBtn').disabled = page >= totalPages;
+            } else {
+                document.getElementById('pagination').style.display = 'none';
+            }
+        }
+
+        // 删除单条历史
+        async function deleteHistory(id) {
+            if (!confirm('确定要删除这条浏览记录吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/user/history/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showToast('删除成功', 'success');
+                    loadHistory(currentPage);
+                } else {
+                    showToast(result.message || '删除失败', 'error');
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+                showToast('网络错误，请稍后重试', 'error');
+            }
+        }
+
+        // 清空所有历史
+        async function clearAllHistory() {
+            if (!confirm('确定要清空所有浏览历史吗？此操作不可恢复！')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/user/history', {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showToast('清空成功', 'success');
+                    loadHistory(1);
+                } else {
+                    showToast(result.message || '清空失败', 'error');
+                }
+            } catch (error) {
+                console.error('清空失败:', error);
+                showToast('网络错误，请稍后重试', 'error');
+            }
+        }
+
+        // 重置筛选
+        function resetFilters() {
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('dateFilter').value = '';
+            loadHistory(1);
+        }
+
+        // 查看新闻
+        function viewNews(newsId) {
+            window.location.href = `/news-detail.html?id=${newsId}`;
+        }
+
+        // 格式化时间
+        function formatTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN');
+        }
+    </script>
+</body>
+</html>

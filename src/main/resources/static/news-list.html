@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Center</title>
+    <style>
+        :root {
+            --bg-color: #F5F5F7;
+            --card-bg: #FFFFFF;
+            --text-primary: #1D1D1F;
+            --text-secondary: #86868B;
+            --nav-bg: rgba(255, 255, 255, 0.7); /* 更通透一点 */
+            --border-radius: 18px;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.5;
+            overflow-x: hidden; /* 防止光晕撑开滚动条 */
+        }
+
+        /* === 顶部导航 (毛玻璃增强) === */
+        .navbar {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            height: 52px;
+            background: var(--nav-bg);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            /* 移除底边框，让光晕能透过去，更像Apple */
+            /* border-bottom: 1px solid rgba(0,0,0,0.05); */
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .navbar-container {
+            width: 100%;
+            max-width: 1024px;
+            padding: 0 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+            opacity: 0.8;
+        }
+
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 12px;
+        }
+
+        .user-info { color: var(--text-secondary); }
+        .user-name { color: var(--text-primary); font-weight: 500; }
+
+        .btn-link {
+            color: #0066CC;
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        /* === 核心：Apple Store 风格头部 === */
+        .header-section {
+            position: relative; /* 为了定位光晕 */
+            max-width: 1024px;
+            margin: 0 auto;
+            padding: 80px 22px 40px; /* 增加顶部距离 */
+            text-align: left; /* Apple Store 通常是左对齐或居中，这里选左对齐更有气势 */
+        }
+
+        /* 1. 顶部氛围灯效 (Ambient Glow) */
+        .ambient-glow {
+            position: absolute;
+            top: -150px; /* 向上偏移，只露出下半部分 */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120%;
+            height: 500px;
+            background: radial-gradient(closest-side, rgba(200, 220, 255, 0.4), transparent),
+            radial-gradient(closest-side, rgba(255, 220, 240, 0.3), transparent);
+            filter: blur(60px);
+            z-index: -1;
+            opacity: 0.8;
+            animation: pulseGlow 10s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: translateX(-50%) scale(1); opacity: 0.6; }
+            100% { transform: translateX(-50%) scale(1.1); opacity: 0.9; }
+        }
+
+        /* 2. 文字排版 */
+        .header-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* 3. 核心：流光渐变文字 */
+        .page-title {
+            font-size: 64px; /* 更大 */
+            font-weight: 700;
+            letter-spacing: -1.5px;
+            margin: 0;
+            line-height: 1.1;
+
+            /* 渐变魔法 */
+            background-image: linear-gradient(
+                    90deg,
+                    #1e3a8a 0%,   /* 深蓝 */
+                    #3b82f6 20%,  /* 亮蓝 */
+                    #8b5cf6 40%,  /* 紫色 */
+                    #ec4899 60%,  /* 粉色 */
+                    #f97316 80%,  /* 橙色 */
+                    #1e3a8a 100%  /* 回到深蓝实现循环 */
+            );
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: textFlow 8s linear infinite;
+        }
+
+        @keyframes textFlow {
+            to { background-position: 200% center; }
+        }
+
+        /* 副标题：灰色 + 黑色组合 */
+        .page-subtitle {
+            font-size: 28px;
+            font-weight: 600;
+            color: #6e6e73; /* Apple Gray */
+            letter-spacing: -0.5px;
+        }
+        .page-subtitle span {
+            color: #1d1d1f; /* Black highlight */
+        }
+
+        /* === 分类 Tab (Apple 风格) === */
+        .category-nav {
+            margin-top: 40px;
+            margin-bottom: 10px;
+        }
+
+        .category-tabs {
+            display: inline-flex;
+            gap: 15px;
+        }
+
+        .category-tab {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-primary);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding-bottom: 2px;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .category-tab:hover {
+            color: #0066CC;
+        }
+
+        .category-tab.active {
+            font-weight: 600;
+            border-bottom: 2px solid var(--text-primary);
+        }
+
+        /* === 新闻列表 Grid === */
+        .news-container {
+            max-width: 1024px;
+            margin: 0 auto 80px;
+            padding: 0 22px;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+            /* 滚动性能优化 */
+            contain: layout style;
+        }
+
+        /* === 新闻卡片 (Apple Card) === */
+        .news-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+            /* 性能优化：GPU加速 + 隔离重绘 */
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            will-change: transform, box-shadow;
+            contain: layout style paint;
+            /* 只对需要的属性添加过渡 */
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+                        box-shadow 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* 卡片悬停效果：轻微上浮 + 阴影扩散 */
+        .news-card:hover {
+            transform: translateZ(0) scale(1.02);
+            box-shadow: 0 14px 40px rgba(0,0,0,0.12);
+            z-index: 2;
+        }
+
+        .news-cover-wrapper {
+            position: relative;
+            padding-top: 56.25%; /* 16:9 */
+            overflow: hidden;
+        }
+
+        .news-cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* 图片过渡优化 */
+            transform: translateZ(0) scale(1);
+            backface-visibility: hidden;
+            transition: transform 0.6s ease;
+        }
+
+        .news-card:hover .news-cover {
+            transform: translateZ(0) scale(1.06);
+        }
+
+        .news-content {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .news-tag {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            color: #86868B;
+        }
+
+        .tag-tech { color: #007AFF; }
+        .tag-sports { color: #FF2D55; }
+        .tag-politics { color: #FF9500; }
+
+        .news-title {
+            font-size: 19px;
+            font-weight: 700;
+            line-height: 1.25;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .news-footer {
+            margin-top: auto;
+            padding-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #86868b;
+            font-weight: 500;
+        }
+
+        .loading, .empty {
+            text-align: center;
+            padding: 60px 0;
+            color: var(--text-secondary);
+            font-size: 15px;
+            grid-column: 1 / -1;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .page-title { font-size: 42px; }
+            .page-subtitle { font-size: 22px; }
+            .news-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 顶部灯光效果 -->
+<div class="ambient-glow"></div>
+
+<!-- 导航栏 -->
+<nav class="navbar">
+    <div class="navbar-container">
+        <a href="#" class="navbar-brand">News Center</a>
+        <div class="navbar-user">
+            <span class="user-info">Hi, <span id="username" class="user-name">Guest</span></span>
+            <span style="margin:0 10px; color:#ddd;">|</span>
+            <a href="/user-settings.html" class="btn-link">Settings</a>
+            <a href="#" class="btn-link" onclick="logout()">Sign out</a>
+        </div>
+    </div>
+</nav>
+
+<!-- 头部区域 (核心渐变文字) -->
+<header class="header-section">
+    <div class="header-content">
+        <!-- 渐变标题 -->
+        <h1 class="page-title">News.</h1>
+        <!-- 副标题：模仿 Store 页面 "The best way to..." 格式 -->
+        <p class="page-subtitle">
+            The latest stories. <span>Tailored for you.</span>
+        </p>
+    </div>
+
+    <!-- 分类导航 (移到左侧与标题对齐) -->
+    <div class="category-nav">
+        <div class="category-tabs">
+            <button class="category-tab active" data-category="all">For You</button>
+            <button class="category-tab" data-category="tech">Technology</button>
+            <button class="category-tab" data-category="sports">Sports</button>
+            <button class="category-tab" data-category="game">Entertainment</button>
+            <button class="category-tab" data-category="politics">Politics</button>
+        </div>
+    </div>
+</header>
+
+<!-- 新闻列表 -->
+<main class="news-container">
+    <div id="newsList" class="news-grid">
+        <!-- JS 渲染区 -->
+    </div>
+</main>
+
+<!-- JS 逻辑部分 (保持不变) -->
+<script>
+    let currentUser = null;
+    let currentCategory = 'all';
+
+    const categoryMap = {
+        'tech': 'Technology',
+        'sports': 'Sports',
+        'game': 'Entertainment',
+        'politics': 'Politics'
+    };
+
+    window.onload = async function() {
+        await checkLoginAndLoadUser();
+        await loadNews('all');
+        initCategoryTabs();
+    };
+
+    async function checkLoginAndLoadUser() {
+        try {
+            const response = await fetch('/api/auth/check');
+            const result = await response.json();
+            if (!result.loggedIn) {
+                window.location.href = '/login.html';
+                return;
+            }
+            const userResponse = await fetch('/api/auth/current');
+            const userResult = await userResponse.json();
+            if (userResult.success) {
+                currentUser = userResult.data;
+                document.getElementById('username').textContent = currentUser.username;
+            }
+        } catch (error) {
+            window.location.href = '/login.html';
+        }
+    }
+
+    async function loadNews(category) {
+        const newsList = document.getElementById('newsList');
+        newsList.innerHTML = '<div class="loading">Loading...</div>';
+        try {
+            let url = '/api/news/list';
+            if (category !== 'all') url += '?category=' + category;
+            const response = await fetch(url);
+            const result = await response.json();
+            if (result.success && result.data.length > 0) {
+                renderNewsList(result.data);
+            } else {
+                newsList.innerHTML = '<div class="empty">No stories available.</div>';
+            }
+        } catch (error) {
+            newsList.innerHTML = '<div class="empty">Failed to load content.</div>';
+        }
+    }
+
+    function renderNewsList(newsList) {
+        const container = document.getElementById('newsList');
+        container.innerHTML = '';
+        newsList.forEach(news => {
+            const card = document.createElement('div');
+            card.className = 'news-card';
+            card.onclick = () => viewNews(news.id);
+
+            const fallbackImg = 'https://via.placeholder.com/600x400/eeeeee/999999?text=News';
+            // 随机标签颜色
+            const catKey = news.category || 'tech';
+
+            card.innerHTML = `
+                    <div class="news-cover-wrapper">
+                        <img class="news-cover" src="${news.coverImage || fallbackImg}" alt="${news.title}" onerror="this.src='${fallbackImg}'">
+                    </div>
+                    <div class="news-content">
+                        <span class="news-tag tag-${catKey}">${categoryMap[news.category] || 'News'}</span>
+                        <div class="news-title">${news.title}</div>
+                        <div class="news-footer">
+                            <span>${formatDate(news.publishTime)}</span>
+                            <span>${formatNumber(news.viewCount)} views</span>
+                        </div>
+                    </div>
+                `;
+            container.appendChild(card);
+        });
+    }
+
+    function formatNumber(num) {
+        if (!num) return 0;
+        if (num > 1000) return (num/1000).toFixed(1) + 'k';
+        return num;
+    }
+
+    async function viewNews(newsId) {
+        // 立即跳转，不等待API响应
+        window.location.href = `/news-detail.html?id=${newsId}`;
+        
+        // 后台记录浏览行为（不阻塞）
+        if (currentUser) {
+            fetch('/api/news/action/view', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    userId: currentUser.id,
+                    newsId: newsId,
+                    preferenceId: currentUser.preferenceId
+                })
+            }).catch(() => {});
+        }
+    }
+
+    function initCategoryTabs() {
+        const tabs = document.querySelectorAll('.category-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                loadNews(this.dataset.category);
+            });
+        });
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+    }
+
+    async function logout() {
+        try {
+            await fetch('/api/auth/logout', {method: 'POST'});
+            window.location.href = '/login.html';
+        } catch (error) { console.error(error); }
+    }
+</script>
+</body>
+</html>

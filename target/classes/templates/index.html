@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据统计中心</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            background-image: linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .custom-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        .btn-glow {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-glow::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+        .btn-glow:hover::after {
+            left: 100%;
+        }
+        /* 列表项动效 */
+        .report-item { transition: all 0.2s ease; }
+        .report-item:hover { transform: translateX(4px); border-color: #3b82f6; }
+    </style>
+</head>
+<body class="text-slate-600 antialiased min-h-screen flex flex-col">
+
+<div class="container mx-auto px-4 py-12 max-w-3xl flex-grow">
+
+    <header class="mb-10 text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 mb-6">
+            <i class="fa fa-bar-chart fa-2x"></i>
+        </div>
+        <h1 class="text-3xl font-bold text-slate-900 tracking-tight">偏好洞察中心</h1>
+        <p class="text-slate-500 mt-3 text-lg">每日用户阅读行为数据聚合与分析</p>
+    </header>
+
+    <div class="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 mb-8 relative overflow-hidden">
+        <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-blue-50 rounded-full opacity-50 pointer-events-none"></div>
+
+        <div class="relative z-10">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="flex h-2 w-2 rounded-full bg-blue-600"></span>
+                <h2 class="text-lg font-bold text-slate-800 uppercase tracking-wide text-sm">新建统计任务</h2>
+            </div>
+
+            <form id="statForm" class="space-y-6">
+                <div class="flex flex-col md:flex-row md:items-end gap-5">
+                    <div class="flex-1">
+                        <label for="statDate" class="block text-sm font-medium text-slate-700 mb-2">选择统计日期</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa fa-calendar"></i>
+                            </div>
+                            <input
+                                    type="date"
+                                    id="statDate"
+                                    name="date"
+                                    class="custom-input w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 font-medium"
+                                    required
+                            >
+                        </div>
+                    </div>
+                    <button
+                            type="submit"
+                            class="btn-glow w-full md:w-auto px-8 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl shadow-lg shadow-slate-900/20 transition-all flex items-center justify-center gap-2"
+                    >
+                        <span id="loadingIndicator" class="hidden animate-spin"><i class="fa fa-circle-o-notch"></i></span>
+                        <span id="submitBtnText">开始计算</span>
+                        <i class="fa fa-arrow-right text-sm opacity-70"></i>
+                    </button>
+                </div>
+            </form>
+
+            <div id="statResult" class="hidden mt-6 p-4 rounded-xl border flex items-start gap-3 animate-fade-in-up">
+                <div id="resultIcon" class="mt-0.5"></div>
+                <div>
+                    <h4 id="resultTitle" class="font-semibold text-sm"></h4>
+                    <p id="resultMessage" class="text-sm opacity-90 break-all"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+        <div class="px-8 py-6 border-b border-slate-50 flex justify-between items-center bg-white">
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa fa-history text-slate-400"></i> 历史归档
+            </h2>
+            <span class="text-xs font-medium px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full">
+                Daily Reports
+            </span>
+        </div>
+
+        <div class="p-6 bg-slate-50/50 min-h-[200px]">
+            <div th:if="${#lists.isEmpty(dates)}" class="flex flex-col items-center justify-center py-12 text-center">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-300">
+                    <i class="fa fa-folder-open-o fa-2x"></i>
+                </div>
+                <p class="text-slate-500 font-medium">暂无历史报表</p>
+                <p class="text-slate-400 text-sm mt-1">请在上方的面板中执行新的统计</p>
+            </div>
+
+            <div class="grid gap-3">
+                <a th:each="date : ${dates}"
+                   th:href="@{/stat(date=${date})}"
+                   class="report-item group flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md cursor-pointer text-decoration-none">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                            <i class="fa fa-file-text-o"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors" th:text="${date}">2025-11-19</div>
+                            <div class="text-xs text-slate-400">点击查看详情分析</div>
+                        </div>
+                    </div>
+                    <div class="text-slate-300 group-hover:translate-x-1 transition-transform">
+                        <i class="fa fa-chevron-right"></i>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-12 text-center">
+        <div class="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-6"></div>
+        <p class="text-slate-400 text-sm">© 2025 新闻阅读偏好统计系统</p>
+    </footer>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('statDate').value = today;
+    });
+
+    document.getElementById('statForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const dateInput = document.getElementById('statDate');
+        const date = dateInput.value;
+        const submitBtn = document.querySelector('button[type="submit"]');
+        const submitBtnText = document.getElementById('submitBtnText');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        // 结果区域元素
+        const statResult = document.getElementById('statResult');
+        const resultMessage = document.getElementById('resultMessage');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultIcon = document.getElementById('resultIcon');
+
+        // 显示加载状态
+        submitBtn.disabled = true;
+        submitBtnText.textContent = '正在计算...';
+        submitBtn.classList.add('opacity-75', 'cursor-wait');
+        loadingIndicator.classList.remove('hidden');
+        statResult.classList.add('hidden');
+
+        fetch(`/stat/daily?date=${encodeURIComponent(date)}`)
+            .then(response => response.text())
+            .then(data => {
+                // === 核心修改逻辑 ===
+                // 判断返回的文字中是否包含“失败”、“Error”或者 Hadoop的"matches 0 files"错误
+                const isError = data.includes('失败') || data.includes('Error') || data.includes('Exception') || data.includes('matches 0 files');
+
+                if (isError) {
+                    // --- 失败状态 (红色) ---
+                    statResult.className = 'mt-6 p-4 rounded-xl border flex items-start gap-3 bg-red-50 border-red-100 text-red-800';
+                    resultIcon.innerHTML = '<i class="fa fa-times-circle text-red-600 text-lg"></i>';
+                    resultTitle.textContent = '统计中断';
+                    resultMessage.innerHTML = data; // 显示错误详情
+                    statResult.classList.remove('hidden');
+
+                    // 失败时不刷新页面，让用户看清报错
+                    console.log("Task failed, keeping page for review.");
+                } else {
+                    // --- 成功状态 (绿色) ---
+                    statResult.className = 'mt-6 p-4 rounded-xl border flex items-start gap-3 bg-green-50 border-green-100 text-green-800';
+                    resultIcon.innerHTML = '<i class="fa fa-check-circle text-green-600 text-lg"></i>';
+                    resultTitle.textContent = '统计完成';
+                    resultMessage.innerHTML = data;
+                    statResult.classList.remove('hidden');
+
+                    // 成功时延长到 3000ms (3秒) 后刷新，让用户有时间看提示
+                    setTimeout(() => {
+                        location.reload();
+                    }, 3000);
+                }
+            })
+            .catch(error => {
+                // --- 网络/系统级错误 (红色) ---
+                statResult.className = 'mt-6 p-4 rounded-xl border flex items-start gap-3 bg-red-50 border-red-100 text-red-800';
+                resultIcon.innerHTML = '<i class="fa fa-wifi text-red-600 text-lg"></i>';
+                resultTitle.textContent = '请求失败';
+                resultMessage.textContent = '网络或服务器错误：' + error.message;
+                statResult.classList.remove('hidden');
+                // 出错不刷新
+            })
+            .finally(() => {
+                // 恢复按钮状态
+                submitBtn.disabled = false;
+                submitBtnText.textContent = '开始计算';
+                submitBtn.classList.remove('opacity-75', 'cursor-wait');
+                loadingIndicator.classList.add('hidden');
+            });
+    });
+</script>
+</body>
+</html>
